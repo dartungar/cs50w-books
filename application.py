@@ -1,7 +1,8 @@
 import functools, os
 
-from flask import Flask, session, redirect, render_template, request, url_for
+from flask import Flask, flash, g, session, redirect, render_template, request, url_for
 from flask_session import Session
+from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -31,10 +32,12 @@ def login_required(view):
     
     return wrapped_view
 
+@app.route("/")
 @app.route("/search", methods=["GET", "POST"])
 @login_required
 def search():
     return render_template('search.html')
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -52,15 +55,16 @@ def register():
 
         if error is None:
             db.execute(
-                'INSERT INTO users (username, password) VALUES (username = :username, password = :password_hash',
+                'INSERT INTO users (username, password) VALUES (:username, :password_hash)',
                         {'username': username, 'password_hash': generate_password_hash(password)}
                     )
             db.commit()
+            flash(f'User {username} registered.')
             return redirect(url_for('login'))
 
         flash(error)
     
-    return render_template(url_for('register'))
+    return render_template('register.html')
 
 # as in Flask documentation
 @app.route("/login", methods=["GET", "POST"])
@@ -84,3 +88,8 @@ def login():
         flash(error)
 
     return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('search'))
