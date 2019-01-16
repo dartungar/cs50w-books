@@ -1,6 +1,6 @@
-import os
+import functools, os
 
-from flask import Flask, session
+from flask import Flask, session, redirect, render_template, request, url_for
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -20,7 +20,67 @@ Session(app)
 engine = create_engine(os.getenv("DATABASE_URL"))
 db = scoped_session(sessionmaker(bind=engine))
 
+# wrapper for checking if user is logged in
+def login_required(view):
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if session.get('user_id') is None:
+            return redirect(url_for('login'))
+        
+        return view(**kwargs)
+    
+    return wrapped_view
 
-@app.route("/")
-def index():
-    return "Project 1: TODO"
+@app.route("/search", methods=["GET", "POST"])
+@login_required
+def search():
+    return render_template('search.html')
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form['username']
+        password = request.form['password']
+        error = None
+
+        if not username:
+            error = 'Username required.'
+        elif not password:
+            error = 'Password required.'
+        elif db.execute('SELECT * FROM users WHERE username = :username', {'username': username}).fetchone() is not None:
+            error = f"User {username} is already registered."
+
+        if error is None:
+            db.execute(
+                'INSERT INTO users (username, password) VALUES (username = :username, password = :password_hash',
+                        {'username': username, 'password_hash': generate_password_hash(password)}
+                    )
+            db.commit()
+            return redirect(url_for('login'))
+
+        flash(error)
+    
+    return render_template(url_for('register'))
+
+# as in Flask documentation
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form['username']
+        password = request.form['password']
+        error = None
+        user = db.execute("SELECT * FROM users WHERE username = :username", {"username": username}).fetchone()
+
+        if user is None:
+            error = 'Invalid username.'
+        elif not check_password_hash(user['password'], password):
+            error = 'Invalid password.'
+
+        if error is None:
+            session.clear()
+            session['user_id'] = user['id']
+            return redirect(url_for('search'))
+
+        flash(error)
+
+    return render_template('login.html')
