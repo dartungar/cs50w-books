@@ -8,15 +8,15 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/templates/custom.css">  
+    <link rel="stylesheet" href="static/custom.css">  
     
     <title> Dartungar's Project 1 - {% block title %} Layout {% endblock %}</title> 
   </head>
 
   <body>
-    <nav class="navbar navbar-expand-lg navbar-light mx-auto justify-content-center">
-      <a class="navbar-brand">Books</a>
-      <ul class="navbar-nav">
+    <nav class="navbar navbar-expand-sm navbar-light ">
+      <a class="navbar-brand" href="/"> Books </a>
+      <ul class="navbar-nav ml-3">
         {% if session['user_id'] %}
         <li class="nav-item"><a class="nav-link" href="{{ url_for('search')}}">Search</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('logout')}}">Logout</a></li>

@@ -32,16 +32,39 @@ def login_required(view):
     
     return wrapped_view
 
+
 @app.route("/")
 @app.route("/search", methods=["GET", "POST"])
 @login_required
 def search():
+    if request.method == "POST":
+        q = request.form["q"]
+        books = db.execute("SELECT isbn, title, author FROM books WHERE isbn ILIKE :q OR author ILIKE :q OR title ILIKE :q", {"q": f"%{q}%"}).fetchall()
+        if books:
+            flash('Search successful!')
+            return render_template('search.html', books=books)
+
+        flash('Could not find books matching your query')
+        return redirect('https://google.com', code=302)
+
     return render_template('search.html')
 
 
+# TODO
+@app.route("/books/<int:isbn>")
+@login_required
+def book(isbn):
+    # TODO
+    book = db.execute("SELECT * FROM books JOIN reviews ON WHERE isbn = :isbn", {"isbn": isbn})
+
+    return render_template('book.html', book=book)
+
+
+# almost as in Flask documentation
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    if request.method == "POST":
+    if request.method == "POST": 
+        
         username = request.form['username']
         password = request.form['password']
         error = None
@@ -66,10 +89,12 @@ def register():
     
     return render_template('register.html')
 
+
 # as in Flask documentation
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        
         username = request.form['username']
         password = request.form['password']
         error = None
@@ -89,7 +114,11 @@ def login():
 
     return render_template('login.html')
 
+
+# as in Flask documentation
 @app.route('/logout')
 def logout():
     session.clear()
+    flash('Logged out.')
     return redirect(url_for('search'))
+

@@ -2,8 +2,34 @@
 
 {% block title %} Search {% endblock %}
 
-{% block body %}
-<h1> hello! </h1>
+{% block content %}
+
+<div class="row h-50 justify-content-center align-items-center">
+    <form action="/search" method="POST">
+        <div class="form-row">
+            <div class="col-10">
+                <input class="form-control form-control-lg" type="text" name="q" placeholder="Enter Title, Author or ISBN">
+            </div>
+            <div class="col-2">
+                <button class="btn btn-secondary btn-lg" type="submit">Search</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="row h-25 justify-content-center">
+    {% if books %}
+    <ul>
+        {% for book in books %}
+        <li>{{ book.title }} by {{ book.author }}</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    Could not find any books.
+    {% endif %}
+</div>
+
+
 {% endblock %}
  
 
