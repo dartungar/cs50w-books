@@ -1,9 +1,14 @@
 {% extends "layout.html" %}
 
-{% block title %} {{ book.title by book.author }} {% endblock %}
+{% block title %} {{ book.title }} by {{ book.author }} {% endblock %}
 
 {% block content %} 
 
+<div> {{ book.title }} by {{ book.author }} </div>
 
+{{ book.year }}
+
+{{ gr_data.average_rating }}
+{{ gr_data.work_ratings_count }}
 
 {% endblock %}

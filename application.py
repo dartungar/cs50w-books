@@ -1,6 +1,6 @@
-import functools, os
+import functools, requests, os
 
-from flask import Flask, flash, g, session, redirect, render_template, request, url_for
+from flask import Flask, abort, flash, jsonify, g, session, redirect, render_template, request, url_for
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy import create_engine
@@ -8,9 +8,12 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 app = Flask(__name__)
 
-# Check for environment variable
+# Check for environment variables
 if not os.getenv("DATABASE_URL"):
     raise RuntimeError("DATABASE_URL is not set")
+
+if not os.getenv("GOODREADS_API_KEY"):
+    raise RuntimeError("GOODREADS_API_KEY is not set")
 
 # Configure session to use filesystem
 app.config["SESSION_PERMANENT"] = False
@@ -41,23 +44,51 @@ def search():
         q = request.form["q"]
         books = db.execute("SELECT isbn, title, author FROM books WHERE isbn ILIKE :q OR author ILIKE :q OR title ILIKE :q", {"q": f"%{q}%"}).fetchall()
         if books:
-            flash('Search successful!')
             return render_template('search.html', books=books)
 
         flash('Could not find books matching your query')
-        return redirect('https://google.com', code=302)
 
     return render_template('search.html')
 
 
-# TODO
-@app.route("/books/<int:isbn>")
+@app.route("/books/<isbn>", methods=["GET", "POST"])
 @login_required
 def book(isbn):
-    # TODO
-    book = db.execute("SELECT * FROM books JOIN reviews ON WHERE isbn = :isbn", {"isbn": isbn})
+    if request.method == 'POST':
+        # TODO: user review
+        # TODO: check if user already reviewed the book
 
-    return render_template('book.html', book=book)
+
+    # get book info from our DB
+    # TODO: get review data with JOIN on reviews table
+    book = db.execute("SELECT isbn, title, author FROM books WHERE isbn = :isbn", {"isbn": isbn}).fetchone()
+
+    # get additional book info from GoodReads API
+    res = requests.get('https://www.goodreads.com/book/review_counts.json', 
+                        params={"key": os.getenv('GOODREADS_API_KEY'), "isbns": isbn}
+                        )
+    gr_data = res.json()['books'][0]
+
+    return render_template('book.html', book=book, gr_data=gr_data)
+
+# return JSONified book data on GET request
+@app.route('/api/<isbn>')
+def api(isbn):
+
+    # prepare keys & fetch values for data
+    keys = ['title', 'author', 'year', 'isbn', 'review_count', 'average_score']
+    values = db.execute("""SELECT books.title, books.author, books.year, books.isbn, COUNT(reviews.rating), AVG(reviews.rating)
+                            FROM books LEFT JOIN reviews ON books.id = reviews.book_id 
+                            WHERE books.isbn=:isbn 
+                            GROUP BY books.title, books.author, books.year, books.isbn""", {"isbn": isbn}).fetchone()
+
+    # if isbn is in our DB, build container, JSONify & return in
+    if values:
+        book_data = dict(zip(keys, values))
+        return jsonify(book_data)
+    
+    # if isbn is not in our DB, return 404
+    abort(404)
 
 
 # almost as in Flask documentation
