@@ -3,14 +3,18 @@
 {% block title %} Search {% endblock %}
 
 {% block content %}
+<div class="container">
+<div class="row my-5 justify-content-center align-items-center">
+<h2>Search books</h2>
+</div>
 
-<div class="row h-50 justify-content-center align-items-center">
-    <form action="/search" method="POST">
-        <div class="form-row">
-            <div class="col-10">
+<div class="row justify-content-center align-items-center">
+    <form action="/search" method="POST" id="search-form">
+        <div class="form-group row">
+            <div class="col-sm-10">
                 <input class="form-control form-control-lg" type="text" name="q" placeholder="Enter Title, Author or ISBN">
             </div>
-            <div class="col-2">
+            <div class="col-sm-2">
                 <button class="btn btn-secondary btn-lg" type="submit">Search</button>
             </div>
         </div>
@@ -20,16 +24,16 @@
 </div>
 
 
+
 {% if books %}
+<div class="row my-3 justify-content-center text-muted"><h5>Search results:</h4></div>
 
 {% for book in books %}
-<div class="row my-1 justify-content-center"></div>
-    <div class="col">
-        <div class="card search-result">
-            <h6 class="card-header"><a href="/books/{{ book.isbn }}">{{ book.title }}</a></h5>    
-            <div class="card-body">
-                <p class="card-text">{{ book.author }}</p>
-            </div>
+<div class="row my-1">
+    <div class="card mx-auto w-50 h-25" style="height: 1rem;">
+        <div class="card-body">
+            <h5 class="card-title"><a href="/books/{{ book.isbn }}">{{ book.title }}</a></h5>
+            <p class="card-text">{{ book.author }}</p>
         </div>
     </div>
 </div>
@@ -38,7 +42,7 @@
 {% endif %}
 
 
-
+</div>
 {% endblock %}
  
 

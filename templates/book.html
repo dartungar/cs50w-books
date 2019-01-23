@@ -3,40 +3,54 @@
 {% block title %} {{ book.title }} by {{ book.author }} {% endblock %}
 
 {% block content %} 
+<div class="container">
+    <h2>{{ book.title }}</h2>
+    <h5 class="text-muted mb-5">{{ book.author }}</h4>
+        
+    <p>Goodreads rating: {{ gr_data.average_rating }} / 5 ({{ gr_data.work_ratings_count }} reviews)</p>
+    <p>Year of publication: {{ book.year }}</p>
+    <p>ISBN: {{ book.isbn }}</p>
 
-<div> {{ book.title }} by {{ book.author }} </div>
 
-{{ book.year }}
+    {% if not already_reviewed %}
+    <div class="mt-5 mb-3"><h5>Leave a review</h5></div>
+    <div>
+        <form action="/books/{{ book.isbn }}" method="POST">
+            <div class="form-group">
+                <label for="ratingSelect">Your Rating</label>
+                <select class="form-control w-25" name="review-rating" id="ratingSelect">
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>4</option>
+                <option>5</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="reviewText">Your review</label>
+                <textarea class="form-control" name="review-text" id="reviewText" rows="10"></textarea>
+            </div>
+            <button class="btn btn-secondary" type="submit">Submit review</button>
+        </form>
+    </div>
+    {% endif %}
 
-{{ gr_data.average_rating }}
-{{ gr_data.work_ratings_count }}
-
-{% if not already_reviewed %}
-<div>
-    <form action="/books/{{ book.isbn }}" method="POST">
-        <div class="form-group">
-            <label for="ratingSelect">Your Rating</label>
-            <select class="form-control" name="review-rating" id="ratingSelect">
-              <option>1</option>
-              <option>2</option>
-              <option>3</option>
-              <option>4</option>
-              <option>5</option>
-            </select>
+    {% if reviews %}
+        <div class="mt-5 mb-3"><h5>User reviews</h5></div>
+        {% for review in reviews %}
+        <div class="row my-1 justify-content-center"></div>
+            <div class="col">
+                <div class="card search-result">
+                    <div class="card-body">
+                        <h5 class="card-titler">{{ review.rating }} / 5</h5>    
+                        <h6 class="card-subtitle mb-2 text-muted">by {{ review.username }}</h6>  
+                        <p class="card-text">{{ review.text }}</p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="reviewText">Your review</label>
-            <textarea class="form-control" name="review-text" id="reviewText" rows="10"></textarea>
-        </div>
-        <button class="btn btn-secondary" type="submit">Submit review</button>
-    </form>
+        {% endfor %}
+    {% endif %}
+
 </div>
-{% endif %}
-
-{% for review in reviews %}
-{{ review.username }}
-{{ review.rating }}
-{{ review.text }}
-{% endfor %}
-
 {% endblock %}

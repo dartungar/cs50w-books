@@ -24,6 +24,7 @@ Session(app)
 engine = create_engine(os.getenv("DATABASE_URL"))
 db = scoped_session(sessionmaker(bind=engine))
 
+
 # wrapper for checking if user is logged in
 def login_required(view):
     @functools.wraps(view)
@@ -60,7 +61,6 @@ def search():
 @login_required
 def book(isbn):
     if request.method == 'POST':
-        # TODO: сделать лейаут
 
         review_rating = request.form['review-rating']
         review_text = request.form['review-text']
@@ -76,9 +76,8 @@ def book(isbn):
         db.commit()
 
     # get book info from our DB
-    book = db.execute("SELECT isbn, title, author FROM books WHERE isbn = :isbn", {"isbn": isbn}).fetchone()
+    book = db.execute("SELECT isbn, title, author, year FROM books WHERE isbn = :isbn", {"isbn": isbn}).fetchone()
 
-    # TODO: подгрузить ревью
     reviews = db.execute("""SELECT users.username, reviews.rating, reviews.text 
                         FROM reviews INNER JOIN users ON reviews.author_id = users.id 
                         WHERE reviews.book_isbn = :isbn""", {"isbn": isbn}).fetchall()
@@ -109,18 +108,18 @@ def api(isbn):
 
     # prepare keys & fetch values for data
     keys = ['title', 'author', 'year', 'isbn', 'review_count', 'average_score']
-    values = db.execute("""SELECT 
+    values = db.execute("""SELECT
             books.title, books.author, books.year, books.isbn, COUNT(reviews.rating), AVG(reviews.rating)
-            FROM books 
-            LEFT JOIN reviews ON books.id = reviews.book_id 
-            WHERE books.isbn=:isbn 
+            FROM books
+            LEFT JOIN reviews ON books.id = reviews.book_id
+            WHERE books.isbn=:isbn
             GROUP BY books.title, books.author, books.year, books.isbn""", {"isbn": isbn}).fetchone()
 
     # if isbn is in our DB, build container, JSONify & return in
     if values:
         book_data = dict(zip(keys, values))
         return jsonify(book_data)
-    
+
     # if isbn is not in our DB, return 404
     abort(404)
 
@@ -129,7 +128,7 @@ def api(isbn):
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST": 
-        
+
         username = request.form['username']
         password = request.form['password']
         error = None
@@ -152,7 +151,7 @@ def register():
             return redirect(url_for('login'))
 
         flash(error)
-    
+
     return render_template('register.html')
 
 
@@ -160,7 +159,7 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        
+
         username = request.form['username']
         password = request.form['password']
         error = None
@@ -187,4 +186,3 @@ def logout():
     session.clear()
     flash('Logged out.')
     return redirect(url_for('search'))
-
