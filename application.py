@@ -42,7 +42,12 @@ def login_required(view):
 def search():
     if request.method == "POST":
         q = request.form["q"]
-        books = db.execute("SELECT isbn, title, author FROM books WHERE isbn ILIKE :q OR author ILIKE :q OR title ILIKE :q", {"q": f"%{q}%"}).fetchall()
+        books = db.execute("""SELECT isbn, title, author
+                            FROM books
+                            WHERE isbn ILIKE :q
+                            OR author ILIKE :q
+                            OR title ILIKE :q""",
+                            {"q": f"%{q}%"}).fetchall()
         if books:
             return render_template('search.html', books=books)
 
@@ -55,21 +60,48 @@ def search():
 @login_required
 def book(isbn):
     if request.method == 'POST':
-        # TODO: user review
-        # TODO: check if user already reviewed the book
+        # TODO: сделать лейаут
 
+        review_rating = request.form['review-rating']
+        review_text = request.form['review-text']
+        
+        db.execute("""INSERT INTO reviews (rating, text, book_isbn, author_id)
+                    VALUES (:rating, :text, :book_isbn, :author_id)
+                    """,
+                    {"rating": review_rating,
+                    "text": review_text,
+                    "book_isbn": isbn,
+                    "author_id": session["user_id"]}
+                    )
+        db.commit()
 
     # get book info from our DB
-    # TODO: get review data with JOIN on reviews table
     book = db.execute("SELECT isbn, title, author FROM books WHERE isbn = :isbn", {"isbn": isbn}).fetchone()
+
+    # TODO: подгрузить ревью
+    reviews = db.execute("""SELECT users.username, reviews.rating, reviews.text 
+                        FROM reviews INNER JOIN users ON reviews.author_id = users.id 
+                        WHERE reviews.book_isbn = :isbn""", {"isbn": isbn}).fetchall()
 
     # get additional book info from GoodReads API
     res = requests.get('https://www.goodreads.com/book/review_counts.json', 
-                        params={"key": os.getenv('GOODREADS_API_KEY'), "isbns": isbn}
-                        )
-    gr_data = res.json()['books'][0]
+                       params={"key": os.getenv('GOODREADS_API_KEY'), "isbns": isbn}
+                       )
+    gr_data = res.json()['books'][0] 
+    
+    # check if this user already reviewed the book
+    # user can leave only 1 review
+    already_reviewed = db.execute("""SELECT reviews.text FROM reviews
+        WHERE reviews.author_id = :user_id AND reviews.book_isbn = :isbn""",
+        {"user_id": session["user_id"], "isbn": isbn}
+        ).fetchall()
 
-    return render_template('book.html', book=book, gr_data=gr_data)
+    return render_template('book.html',
+                           book=book,
+                           gr_data=gr_data,
+                           already_reviewed=already_reviewed,
+                           reviews=reviews
+                           )
 
 # return JSONified book data on GET request
 @app.route('/api/<isbn>')
@@ -77,10 +109,12 @@ def api(isbn):
 
     # prepare keys & fetch values for data
     keys = ['title', 'author', 'year', 'isbn', 'review_count', 'average_score']
-    values = db.execute("""SELECT books.title, books.author, books.year, books.isbn, COUNT(reviews.rating), AVG(reviews.rating)
-                            FROM books LEFT JOIN reviews ON books.id = reviews.book_id 
-                            WHERE books.isbn=:isbn 
-                            GROUP BY books.title, books.author, books.year, books.isbn""", {"isbn": isbn}).fetchone()
+    values = db.execute("""SELECT 
+            books.title, books.author, books.year, books.isbn, COUNT(reviews.rating), AVG(reviews.rating)
+            FROM books 
+            LEFT JOIN reviews ON books.id = reviews.book_id 
+            WHERE books.isbn=:isbn 
+            GROUP BY books.title, books.author, books.year, books.isbn""", {"isbn": isbn}).fetchone()
 
     # if isbn is in our DB, build container, JSONify & return in
     if values:
@@ -104,7 +138,8 @@ def register():
             error = 'Username required.'
         elif not password:
             error = 'Password required.'
-        elif db.execute('SELECT * FROM users WHERE username = :username', {'username': username}).fetchone() is not None:
+        elif db.execute('SELECT * FROM users WHERE username = :username',
+                        {'username': username}).fetchone() is not None:
             error = f"User {username} is already registered."
 
         if error is None:

@@ -11,4 +11,32 @@
 {{ gr_data.average_rating }}
 {{ gr_data.work_ratings_count }}
 
+{% if not already_reviewed %}
+<div>
+    <form action="/books/{{ book.isbn }}" method="POST">
+        <div class="form-group">
+            <label for="ratingSelect">Your Rating</label>
+            <select class="form-control" name="review-rating" id="ratingSelect">
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+              <option>4</option>
+              <option>5</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="reviewText">Your review</label>
+            <textarea class="form-control" name="review-text" id="reviewText" rows="10"></textarea>
+        </div>
+        <button class="btn btn-secondary" type="submit">Submit review</button>
+    </form>
+</div>
+{% endif %}
+
+{% for review in reviews %}
+{{ review.username }}
+{{ review.rating }}
+{{ review.text }}
+{% endfor %}
+
 {% endblock %}
