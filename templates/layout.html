@@ -14,7 +14,7 @@
   </head>
 
   <body>
-    <nav class="navbar navbar-expand-sm navbar-light">
+    <nav class="navbar navbar-expand-sm navbar-light justify-content-center">
       <a class="navbar-brand" href="/"> Books </a>
       <ul class="navbar-nav ml-3">
         {% if session['user_id'] %}
@@ -28,7 +28,7 @@
     </nav>
     
     {% for message in get_flashed_messages() %}
-    <div class="flash alert alert-secondary">{{ message }}</div>
+      <div class="flash alert alert-secondary">{{ message }}</div>
     {% endfor %}
 
     {% block content %} Hey! {% endblock %}
