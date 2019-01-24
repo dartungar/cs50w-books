@@ -58,6 +58,7 @@ db.execute("""CREATE TABLE IF NOT EXISTS
 
 db.commit()
 
+
 # wrapper for checking if user is logged in
 def login_required(view):
     @functools.wraps(view)
@@ -81,7 +82,7 @@ def search():
                             WHERE isbn ILIKE :q
                             OR author ILIKE :q
                             OR title ILIKE :q""",
-                            {"q": f"%{q}%"}).fetchall()
+                           {"q": f"%{q}%"}).fetchall()
         if books:
             return render_template('search.html', books=books)
 
@@ -111,8 +112,8 @@ def book(isbn):
 
     # get book info from our DB
     book = db.execute("""SELECT isbn, title, author, year
-                         FROM books WHERE isbn = :isbn""",
-                         {"isbn": isbn}).fetchone()
+                    FROM books WHERE isbn = :isbn""",
+                    {"isbn": isbn}).fetchone()
 
     reviews = db.execute("""SELECT users.username, reviews.rating, reviews.text
                         FROM reviews
@@ -123,7 +124,7 @@ def book(isbn):
     # get additional book info from GoodReads API
     res = requests.get('https://www.goodreads.com/book/review_counts.json',
                        params={
-                           "key": os.getenv('GOODREADS_API_KEY'), 
+                           "key": os.getenv('GOODREADS_API_KEY'),
                            "isbns": isbn
                            }
                        )
@@ -131,10 +132,12 @@ def book(isbn):
 
     # check if this user already reviewed the book
     # user can leave only 1 review
-    already_reviewed = db.execute("""SELECT reviews.text FROM reviews
-        WHERE reviews.author_id = :user_id AND reviews.book_isbn = :isbn""",
-        {"user_id": session["user_id"], "isbn": isbn}
-        ).fetchall()
+    already_reviewed = db.execute("""SELECT reviews.text
+                                FROM reviews
+                                WHERE reviews.author_id = :user_id
+                                AND reviews.book_isbn = :isbn""",
+                                {"user_id": session["user_id"], "isbn": isbn}
+                                ).fetchall()
 
     return render_template('book.html',
                            book=book,
@@ -142,6 +145,7 @@ def book(isbn):
                            already_reviewed=already_reviewed,
                            reviews=reviews
                            )
+
 
 # return JSONified book data on GET request
 @app.route('/api/<isbn>')
@@ -208,7 +212,7 @@ def login():
         username = request.form['username']
         password = request.form['password']
         error = None
-        user = db.execute("SELECT * FROM users WHERE username = :username", 
+        user = db.execute("SELECT * FROM users WHERE username = :username",
                           {"username": username}).fetchone()
 
         if user is None:

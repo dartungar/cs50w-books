@@ -13,3 +13,7 @@ pages:
 * book - view details about the book, reviews, and leave your own review. login required
 * login - log in.
 * register - register.
+
+env variables:
+GOODREADS_API_KEY - your Goodreads API key
+DATABASE_URL - URI for your database
